@@ -10,7 +10,7 @@ public class Post {
     LocalDateTime date;
     private int likes;
 
-    public Post(int postId, String title, String author, String content) {
+    public Post(int postId, String author, String title, String content) {
         this.postId = postId;
         this.title = title;
         this.author = author;

@@ -4,9 +4,9 @@ import ait.forum.model.Post;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.function.Predicate;
 
 public class ForumImpl implements Forum {
 
@@ -41,80 +41,60 @@ public class ForumImpl implements Forum {
 
     @Override
     public boolean removePost(int postId) {
-        int index = searchById(postId);
-        if (index < 0) {
-            return false;
+        for (int i = 0; i < size; i++) {
+            if (posts[i].getPostId() == postId) {
+                System.arraycopy(posts, i + 1, posts, i, size - i - 1);
+                posts[--size] = null;
+                return true;
+            }
         }
-        System.arraycopy(posts, index + 1, posts, index, size - index - 1);
-        posts = Arrays.copyOf(posts, posts.length - 1);
-        size--;
-        return true;
+        return false;
     }
 
     @Override
-    public boolean updatePost(int postId, String content) {
-        int index = searchById(postId);
-        if (index < 0) {
+    public boolean updatePost(int postId, String newContent) {
+        Post post = getPostById(postId);
+        if (post == null) {
             return false;
         }
-        posts[index].setContent(content);
+        post.setContent(newContent);
         return true;
     }
 
     @Override
     public Post getPostById(int postId) {
-//        for (int i = 0; i < size; i++) {
-//            if (posts[i].getPostId() == postId) {
-//                return posts[i];
-//            }
-//        }
-//        return null;
-        int index = searchById(postId);
-        if (index < 0) {
-            return null;
+        for (int i = 0; i < size; i++) {
+            if (posts[i].getPostId() == postId) {
+                return posts[i];
+            }
         }
-        return posts[index];
+        return null;
     }
 
     @Override
     public Post[] getPostsByAuthor(String author) {
-//        return findByPredicate(post -> post.getAuthor().equals(author));
         Post pattern = new Post(Integer.MIN_VALUE, author, null, null);
         pattern.setDate(LocalDateTime.MIN);
-        int from = -Arrays.binarySearch(posts, 0, size, pattern, comparator) -1;
+        int from = -Arrays.binarySearch(posts, 0, size, pattern, comparator) - 1;
         pattern = new Post(Integer.MAX_VALUE, author, null, null);
         pattern.setDate(LocalDateTime.MAX);
-        int to = -Arrays.binarySearch(posts, 0, size, pattern, comparator) -1;
+        int to = -Arrays.binarySearch(posts, 0, size, pattern, comparator) - 1;
         return Arrays.copyOfRange(posts, from, to);
     }
 
     @Override
     public Post[] getPostsByAuthor(String author, LocalDate dateFrom, LocalDate dateTo) {
-        return findByPredicate(p -> p.getAuthor().equals(author) && p.getDate().toLocalDate().compareTo(dateFrom) >= 0
-                && p.getDate().toLocalDate().compareTo(dateTo) <= 0);
+        Post pattern = new Post(Integer.MIN_VALUE, author, null, null);
+        pattern.setDate(dateFrom.atStartOfDay());
+        int from = -Arrays.binarySearch(posts, 0, size, pattern, comparator) - 1;
+        pattern = new Post(Integer.MAX_VALUE, author, null, null);
+        pattern.setDate(LocalDateTime.of(dateTo, LocalTime.MAX));
+        int to = -Arrays.binarySearch(posts, 0, size, pattern, comparator) - 1;
+        return Arrays.copyOfRange(posts, from, to);
     }
 
     @Override
     public int size() {
         return size;
     }
-    private int searchById(int postId) {
-        for (int i = 0; i < size; i++) {
-            if (posts[i].getPostId() == postId) {
-                return i;
-            }
-        }
-        return -1;
-    }
-    private Post[] findByPredicate(Predicate<Post> predicate) {
-        Post[] res = new Post[size];
-        int j = 0;
-        for (int i = 0; i < size; i++) {
-            if (predicate.test(posts[i])) {
-                res[j++] = posts[i];
-            }
-        }
-        return Arrays.copyOf(res, j);
-    }
-
 }
